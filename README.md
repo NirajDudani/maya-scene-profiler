@@ -2,7 +2,7 @@
 
 A dockable Maya 2024 tool that audits a lighting scene and reports problems instantly — missing textures, broken references, shader issues, render settings, AOVs, and more. Built with PySide2 and the Maya Python API.
 
-![Maya](https://img.shields.io/badge/Maya-2024-blue) ![Python](https://img.shields.io/badge/python-3.10%2B-blue) ![PySide2](https://img.shields.io/badge/PySide2-required-green)
+![Maya](https://img.shields.io/badge/Maya-2022--2025-blue) ![Python](https://img.shields.io/badge/python-3.10%2B-blue) ![Qt](https://img.shields.io/badge/PySide2%20%7C%20PySide6-supported-green)
 
 ---
 
@@ -44,12 +44,12 @@ That's what led me to build the Scene Profiler. I wanted something that could lo
 
 ## Requirements
 
-- Autodesk Maya 2024
-- Python 3.10+ (bundled with Maya 2024)
-- PySide2 (bundled with Maya 2024)
+- Autodesk Maya 2022, 2023, 2024, or 2025
+- Python 3.10+ (bundled with Maya 2022+)
+- PySide2 (Maya 2022–2024) or PySide6 (Maya 2025+) — detected automatically
 - Arnold for Maya *(AOV Report only — skipped gracefully if not loaded)*
 
-No pip installs required. All dependencies ship with Maya 2024.
+No pip installs required. All dependencies ship with Maya.
 
 ---
 

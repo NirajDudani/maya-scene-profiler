@@ -8,7 +8,7 @@ import os
 import maya.cmds as cmds
 from maya.app.general.mayaMixin import MayaQWidgetDockableMixin
 
-from PySide2 import QtWidgets, QtCore, QtGui
+from ui.qt_shim import QtWidgets, QtCore, QtGui
 
 from core.runner   import run_all
 from core.exporter import export_csv, export_html

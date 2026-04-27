@@ -4,7 +4,7 @@ A collapsible card widget that displays one DiagnosticResult.
 Matches Maya's panel aesthetic using the shared stylesheet.
 """
 
-from PySide2 import QtWidgets, QtCore, QtGui
+from ui.qt_shim import QtWidgets, QtCore, QtGui
 from core.result import DiagnosticResult, Severity
 from ui.styles import SEVERITY_BADGE, SEVERITY_BORDER, BG_MID, BG_PANEL, BORDER, TEXT_PRIMARY, TEXT_SECONDARY
 
