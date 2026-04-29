@@ -259,32 +259,12 @@ A flat data file for use in pipeline scripts or spreadsheets. Columns: `Diagnost
 
 ---
 
-## Adding a new diagnostic
+## Contributing
 
-1. Create `diagnostics/my_check.py` with a `run()` function that returns a `DiagnosticResult`.
-2. Use `result.add(Severity.WARNING, "message", detail="...", node="...")` to record findings.
-3. Register it in `core/runner.py` by adding `("My Check", run_my_check)` to `_DIAGNOSTICS`.
+Bug reports and suggestions are welcome. If you run into a false positive, a missing check, or a Maya version compatibility issue, open an issue with the scene setup that triggered it and the full error message from the Script Editor output.
 
-```python
-# diagnostics/my_check.py
-from core.result import DiagnosticResult, Severity
-import maya.cmds as cmds
+---
 
-def run() -> DiagnosticResult:
-    result = DiagnosticResult(name="My Check")
-    # ... your logic ...
-    result.summary = "Summary shown on collapsed card"
-    return result
-```
+## License
 
-```python
-# core/runner.py — add to _DIAGNOSTICS list
-from diagnostics.my_check import run as run_my_check
-
-_DIAGNOSTICS = [
-    ...
-    ("My Check", run_my_check),
-]
-```
-
-The runner handles timing, exception catching, and progress reporting automatically — your `run()` function only needs to return a result.
+MIT License — free to use, modify, and distribute for personal and commercial projects. See [LICENSE](LICENSE) for the full text.
