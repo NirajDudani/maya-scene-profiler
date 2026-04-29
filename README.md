@@ -30,15 +30,108 @@ That's what led me to build the Scene Profiler. I wanted something that could lo
 
 ## Diagnostics
 
-| Diagnostic | What it checks |
-|---|---|
-| **Scene Weight** | Polygon count thresholds, individual heavy meshes, leftover construction history nodes and which objects have them |
-| **Texture Audit** | Missing files on disk, non-TX formats, oversized textures (>4096px), duplicate paths, unconnected file nodes |
-| **Reference Graph** | Broken or unresolved references, unloaded references, duplicate reference paths, nesting depth >3 levels |
-| **Light Inventory** | No lights in scene, default or non-convention names, extreme intensity values, invisible lights that won't render |
-| **Shader Inventory** | Orphaned shaders assigned to no geometry, meshes with no material, duplicate shader names across namespaces |
-| **Render Layer Audit** | Disabled or empty render layers, default frame range, missing image file prefix in Render Settings |
-| **AOV Report** | Arnold only — disabled AOVs, duplicate names, invalid characters, missing expected passes (beauty, diffuse, specular, shadow, Z, N) |
+Each diagnostic runs independently. Results are shown as collapsible cards with a severity badge (PASS / WARNING / ERROR), a one-line summary, and an expandable table of individual findings. Every finding includes the Maya node name and a plain-English explanation of how to fix it.
+
+---
+
+### Scene Weight
+
+Checks the overall heaviness of the scene.
+
+| Check | Threshold | Severity |
+|---|---|---|
+| Total polygon count | > 5 million | WARNING |
+| Total polygon count | > 20 million | ERROR |
+| Individual heavy mesh | > 500,000 faces — reports full DAG path | WARNING |
+| Construction history | Any `polyExtrudeFace`, `polyBevel`, `polySplit`, or `polySubdivide` nodes remaining — lists each affected mesh by full path | WARNING |
+
+---
+
+### Texture Audit
+
+Checks every `file` texture node in the scene.
+
+| Check | Condition | Severity |
+|---|---|---|
+| No textures in scene | Zero file nodes found | INFO |
+| Empty texture path | Node has no path set — reports which shader owns it | WARNING |
+| Missing file on disk | Path is set but the file does not exist | ERROR |
+| Duplicate texture path | Same file used by more than one node | WARNING |
+| Non-TX format | Texture does not end in `.tx` (Arnold expects `.tx`) | WARNING |
+| Oversized texture | PNG width or height exceeds 4096px | WARNING |
+| Unconnected node | File node has no outgoing connections — not used by any shader | WARNING |
+
+---
+
+### Reference Graph
+
+Checks every file reference in the scene.
+
+| Check | Condition | Severity |
+|---|---|---|
+| No references | Zero reference nodes found | INFO |
+| No file path on reference | Reference node exists but has no path | ERROR |
+| Broken reference | File path set but file does not exist on disk | ERROR |
+| Unloaded reference | Reference exists but is currently unloaded | WARNING |
+| Duplicate reference path | Same file referenced more than once | WARNING |
+| Deep nesting | Reference is nested more than 3 levels deep | WARNING |
+
+---
+
+### Light Inventory
+
+Checks all lights. Supports native Maya lights and Arnold, VRay, and Redshift light types.
+
+| Check | Condition | Severity |
+|---|---|---|
+| No lights | Zero lights found in scene | WARNING |
+| Default name | Transform name matches Maya's auto-assigned defaults (e.g. `directionalLight1`) | WARNING |
+| Naming convention | Transform name does not follow `prefix_type_NNN` pattern (e.g. `key_area_001`) | WARNING |
+| High intensity | Light intensity exceeds 10,000 | WARNING |
+| Extreme intensity | Light intensity exceeds 100,000 | ERROR |
+| Invisible light | Parent transform has visibility turned off — light will not contribute to render | WARNING |
+
+---
+
+### Shader Inventory
+
+Checks shading engines and materials.
+
+| Check | Condition | Severity |
+|---|---|---|
+| Orphaned shader | Shading engine has no geometry connected via `dagSetMembers` | WARNING |
+| Unshaded mesh | Mesh has no shading engine connected via `instObjGroups` — will render as default grey | ERROR |
+| Duplicate shader name | Two materials share the same name across namespaces | WARNING |
+
+---
+
+### Render Layer Audit
+
+Checks render layers and global render settings. Detects whether the scene uses legacy render layers or Maya's Render Setup automatically.
+
+| Check | Condition | Severity |
+|---|---|---|
+| No Render Setup layers | Render Setup is active but no layers are defined | INFO |
+| Render Setup layer disabled | Layer's `enabled` attribute is off — will not render on the farm | WARNING |
+| Legacy layer not renderable | Layer's `renderable` attribute is off | WARNING |
+| Empty render layer | Layer has no members assigned — reports how many meshes are available to assign | WARNING |
+| Default frame range | Start and end frame are both 1 (never changed from default) | WARNING |
+| No image file prefix | `imageFilePrefix` is empty in Render Settings — output files may overwrite each other | WARNING |
+
+---
+
+### AOV Report
+
+Arnold-only. Skipped gracefully with an INFO message if Arnold is not loaded.
+
+| Check | Condition | Severity |
+|---|---|---|
+| Arnold not loaded | Arnold not available in the renderer list | INFO |
+| No AOVs defined | Zero `aiAOV` nodes in scene | WARNING |
+| AOV disabled | AOV exists but `enabled` attribute is off — will not be written during render | WARNING |
+| Duplicate AOV name | Two AOVs share the same name | ERROR |
+| Invalid AOV name | Name contains characters outside `A–Z a–z 0–9 _` | WARNING |
+| Missing expected AOVs | Any of `beauty`, `diffuse`, `specular`, `shadow`, `Z`, `N` not defined — each includes a plain-English description of what the pass is used for in compositing | WARNING |
 
 ---
 
@@ -64,20 +157,42 @@ C:/Users/<you>/Documents/maya/2024/scripts/mayaSceneProfiler/
 **2. Create `userSetup.py` in your Maya scripts directory** (one level above the tool folder):
 
 ```python
-import sys, os, maya.utils, maya.cmds as cmds
+"""
+userSetup.py
+Maya executes this file automatically on every startup.
+Launches Scene Profiler docked to the right panel.
+"""
+
+import sys
+import os
+import maya.utils
+import maya.cmds as cmds
+
 
 def _launch_scene_profiler():
+    # cmds.internalVar gives us the exact scripts dir Maya is using
     scripts_dir = cmds.internalVar(userScriptDir=True).rstrip("/\\")
     tool_path = os.path.join(scripts_dir, "mayaSceneProfiler")
+
+    if not os.path.isdir(tool_path):
+        print(f"[SceneProfiler] Tool folder not found at: {tool_path}")
+        return
+
     if tool_path not in sys.path:
         sys.path.insert(0, tool_path)
+
     try:
         import scene_profiler
         scene_profiler.launch()
+        print("[SceneProfiler] Launched successfully.")
     except Exception as e:
+        import traceback
         print(f"[SceneProfiler] Launch failed: {e}")
+        traceback.print_exc()
+
 
 maya.utils.executeDeferred(_launch_scene_profiler)
+
 ```
 
 **3. Restart Maya.** The tool opens automatically, docked to the right panel.
