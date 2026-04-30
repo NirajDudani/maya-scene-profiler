@@ -90,3 +90,27 @@ def find_tx_siblings(paths: list) -> tuple:
         else:
             missing.append(path)
     return already_have, missing
+
+
+def scan_folder_for_tx(folder: str, missing_paths: list) -> tuple:
+    """Recursively scan folder for .tx files matching basenames of missing_paths.
+    Matching is case-insensitive by filename only (not full path).
+    Returns (found, still_missing) where found is [(original_path, tx_path), ...].
+    """
+    tx_index = {}
+    for root, _, files in os.walk(folder):
+        for fname in files:
+            if fname.lower().endswith(".tx"):
+                tx_index[fname.lower()] = os.path.join(root, fname)
+
+    found = []
+    still_missing = []
+    for orig_path in missing_paths:
+        stem = os.path.splitext(os.path.basename(orig_path))[0]
+        tx_name = (stem + ".tx").lower()
+        if tx_name in tx_index:
+            found.append((orig_path, tx_index[tx_name]))
+        else:
+            still_missing.append(orig_path)
+
+    return found, still_missing
