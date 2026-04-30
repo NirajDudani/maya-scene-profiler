@@ -22,6 +22,7 @@ class DiagnosticItem:
     message: str
     detail: Optional[str] = None      # extra context shown when card is expanded
     node: Optional[str] = None        # Maya node name, if applicable
+    category: Optional[str] = None    # optional grouping label for subcategory display
 
 
 @dataclass
@@ -51,5 +52,6 @@ class DiagnosticResult:
         return sum(1 for i in self.items if i.severity == Severity.WARNING)
 
     def add(self, severity: Severity, message: str,
-            detail: str = None, node: str = None) -> None:
-        self.items.append(DiagnosticItem(severity, message, detail, node))
+            detail: str = None, node: str = None,
+            category: str = None) -> None:
+        self.items.append(DiagnosticItem(severity, message, detail, node, category))
