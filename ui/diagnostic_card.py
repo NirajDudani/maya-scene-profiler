@@ -38,10 +38,11 @@ TABLE_STYLE = f"""
 
 
 class DiagnosticCard(QtWidgets.QWidget):
-    def __init__(self, result: DiagnosticResult, parent=None):
+    def __init__(self, result: DiagnosticResult, category_actions: dict = None, parent=None):
         super().__init__(parent)
-        self._result   = result
-        self._expanded = False
+        self._result           = result
+        self._expanded         = False
+        self._category_actions = category_actions or {}  # {category: (label, callback)}
         self._build_ui()
         self._apply_severity()
 
@@ -181,6 +182,20 @@ class DiagnosticCard(QtWidgets.QWidget):
         sh_layout.addWidget(name_lbl)
         sh_layout.addWidget(count_lbl)
         sh_layout.addStretch()
+
+        if category in self._category_actions:
+            btn_label, btn_callback = self._category_actions[category]
+            action_btn = QtWidgets.QPushButton(btn_label)
+            action_btn.setFixedHeight(20)
+            action_btn.setStyleSheet(
+                f"QPushButton {{ background: #2a6496; color: #ffffff; border: none; "
+                f"border-radius: 3px; padding: 0 8px; font-size: 10px; }}"
+                f"QPushButton:hover {{ background: #3a74a6; }}"
+                f"QPushButton:pressed {{ background: #1a5486; }}"
+            )
+            action_btn.clicked.connect(lambda checked=False, cb=btn_callback: cb())
+            sh_layout.addWidget(action_btn)
+
         sh_layout.addWidget(sev_badge)
 
         # table (collapsed by default)
