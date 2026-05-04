@@ -18,7 +18,7 @@ During my time in school I was working on a lighting assignment and kept running
 
 At some point I realised I was doing the exact same checks every single time. It was never anything new, it was always one of the same five or six problems. That repetition is what made me think — this should just be a script. If I'm checking the same things in the same order every time a scene breaks, a tool can do that in seconds.
 
-That's what led me to build the Scene Profiler. I wanted something that could look at a lighting scene and immediately tell me what was wrong instead of me having to hunt for it manually. It saved me a lot of time finishing that assignment and I realised it would be even more valuable in a real production where you're dealing with dozens of shots and dozens of artists all hitting the same kinds of problems.
+That's what led me to build the Scene Profiler. I wanted something that could look at a lighting scene and immediately tell me what was wrong instead of me having to hunt for it manually. I realised it would be even more valuable in a real production where you're dealing with dozens of shots and dozens of artists all hitting the same kinds of problems.
 
 ---
 
