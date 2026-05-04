@@ -6,6 +6,12 @@ A dockable Maya 2024 tool that audits a lighting scene and reports problems inst
 
 ---
 
+## Demo
+
+[![Maya Scene Profiler Demo](https://img.youtube.com/vi/pKyocGW9Ha0/0.jpg)](https://youtu.be/pKyocGW9Ha0?si=1Zjd2pMuhUvC8Z7T)
+
+---
+
 ## Why I built this
 
 During my time in school I was working on a lighting assignment and kept running into render failures that I couldn't figure out. I'd spend more time debugging the scene than actually lighting it. Every time something broke I'd go through the same process — checking if textures were loading, checking if my lights were set up correctly, checking render settings — all manually, clicking through different editors one by one.
@@ -20,11 +26,13 @@ That's what led me to build the Scene Profiler. I wanted something that could lo
 
 - Docks into Maya's UI like a native panel — no floating windows
 - Runs seven independent diagnostics in one click
-- Collapsible result cards — expand only what you need to investigate
+- Collapsible result cards with subcategory dropdowns — expand only what you need to investigate
 - Summary pills showing total Errors, Warnings, and Passed checks at a glance
 - Per-finding detail tooltips with plain-English explanations and fix instructions
+- **Convert to TX** — detects existing `.tx` files automatically, scans a folder for missing ones, converts any remainder with `maketx`, and retargets all file nodes in one flow
 - Export results as a **CSV spreadsheet** or **HTML report**
 - Auto-launches on Maya startup via `userSetup.py` — no shelf button or Script Editor needed
+- Compatible with Maya 2022–2025 (PySide2 and PySide6 detected automatically)
 
 ---
 
@@ -49,17 +57,29 @@ Checks the overall heaviness of the scene.
 
 ### Texture Audit
 
-Checks every `file` texture node in the scene.
+Checks every `file` texture node in the scene. Findings are grouped into collapsible subcategories inside the card.
 
 | Check | Condition | Severity |
 |---|---|---|
 | No textures in scene | Zero file nodes found | INFO |
 | Empty texture path | Node has no path set — reports which shader owns it | WARNING |
 | Missing file on disk | Path is set but the file does not exist | ERROR |
-| Duplicate texture path | Same file used by more than one node | WARNING |
-| Non-TX format | Texture does not end in `.tx` (Arnold expects `.tx`) | WARNING |
+| Non-TX format | Texture does not end in `.tx` (Arnold expects `.tx`) — includes a **Convert to TX** button | WARNING |
 | Oversized texture | PNG width or height exceeds 4096px | WARNING |
 | Unconnected node | File node has no outgoing connections — not used by any shader | WARNING |
+| Shared textures | Same texture file used by 2 or more distinct materials — hover to see which materials | INFO |
+
+#### Convert to TX
+
+Clicking **Convert to TX** in the Non-TX Format subcategory runs the following flow:
+
+1. Checks whether a `.tx` sibling already exists next to each texture on disk
+2. If all `.tx` files are present — offers to retarget the file nodes immediately, no conversion needed
+3. If some are missing — asks whether you have a folder containing the `.tx` files, scans it recursively, and matches by filename
+4. Any textures still missing after the folder scan are converted with Arnold's `maketx` tool
+5. All file nodes in the scene are updated to point to the `.tx` versions
+
+Requires Arnold for Maya to be installed. `maketx` is located automatically from the loaded plugin.
 
 ---
 
@@ -140,7 +160,7 @@ Arnold-only. Skipped gracefully with an INFO message if Arnold is not loaded.
 - Autodesk Maya 2022, 2023, 2024, or 2025
 - Python 3.10+ (bundled with Maya 2022+)
 - PySide2 (Maya 2022–2024) or PySide6 (Maya 2025+) — detected automatically
-- Arnold for Maya *(AOV Report only — skipped gracefully if not loaded)*
+- Arnold for Maya *(AOV Report and Convert to TX only — skipped gracefully if not loaded)*
 
 No pip installs required. All dependencies ship with Maya.
 
@@ -228,11 +248,13 @@ mayaSceneProfiler/
 │   └── exporter.py            # CSV and HTML export logic
 ├── ui/
 │   ├── main_window.py         # Main dockable window (MayaQWidgetDockableMixin)
-│   ├── diagnostic_card.py     # Collapsible per-diagnostic result card
-│   └── styles.py              # Maya 2024 dark theme stylesheet and colour constants
+│   ├── diagnostic_card.py     # Collapsible per-diagnostic result card with subcategory dropdowns
+│   ├── qt_shim.py             # PySide2 / PySide6 compatibility shim
+│   └── styles.py              # Maya dark theme stylesheet and colour constants
 └── diagnostics/
     ├── scene_weight.py        # Polygon count, heavy meshes, construction history
-    ├── texture_audit.py       # File nodes, missing textures, TX format, duplicates
+    ├── texture_audit.py       # File nodes, missing textures, TX format, shared textures
+    ├── maketx_converter.py    # Locates maketx, converts textures, scans folders for .tx files
     ├── reference_graph.py     # File references, broken paths, nesting depth
     ├── light_inventory.py     # Light names, intensity, visibility
     ├── shader_inventory.py    # Orphaned shaders, unshaded meshes, duplicate names
